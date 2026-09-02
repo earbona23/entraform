@@ -50,6 +50,23 @@ def plan_json() -> str:
                 "name": "godmode",
                 "permissions": [{"actions": ["*"], "not_actions": []}],
             }),
+            # ENT006: role-assignable group
+            _rc("azuread_group.role_assignable", "azuread_group", {
+                "display_name": "Privileged App Admins", "assignable_to_role": True}),
+            # ENT007: enforcing CA policy left report-only
+            _rc("azuread_conditional_access_policy.staged", "azuread_conditional_access_policy", {
+                "display_name": "Block legacy auth", "state": "enabledForReportingButNotEnforced",
+                "grant_controls": [{"built_in_controls": ["block"]}],
+                "conditions": [{"users": [{"included_users": ["All"]}]}]}),
+            # ENT008: federated credential, unpinned GitHub Actions subject
+            _rc("azuread_application_federated_identity_credential.gha",
+                "azuread_application_federated_identity_credential", {
+                "display_name": "gha", "issuer": "https://token.actions.githubusercontent.com",
+                "subject": "repo:acme/infra", "audiences": ["api://AzureADTokenExchange"]}),
+            # ENT009: permanent Global Administrator directory role assignment
+            _rc("azuread_directory_role_assignment.ga", "azuread_directory_role_assignment", {
+                "role_id": "62e90394-69f5-4237-9190-012177145e10",
+                "principal_object_id": "11111111-1111-4111-8111-111111111111"}),
             # CLEAN control: a scoped, least-privilege role assignment — must produce nothing
             _rc("azurerm_role_assignment.scoped", "azurerm_role_assignment", {
                 "role_definition_name": "Reader",

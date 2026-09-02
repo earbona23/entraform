@@ -214,10 +214,150 @@ def azure_custom_role_wildcard_action(resource: Resource) -> Finding | None:
     return None
 
 
+# Well-known Entra directory role template ids that are tier-0 — whoever holds one of these,
+# permanently and outside PIM, is standing privilege an attacker only has to reach once.
+PRIVILEGED_DIRECTORY_ROLE_TEMPLATES: dict[str, str] = {
+    "62e90394-69f5-4237-9190-012177145e10": "Global Administrator",
+    "e8611ab8-c189-46e8-94e1-60213ab1f814": "Privileged Role Administrator",
+    "7be44c8a-adaf-4e2a-84d6-ab2649e08a13": "Privileged Authentication Administrator",
+    "9b895d92-2cd3-44c7-9d02-a6ac2d5ea5c3": "Application Administrator",
+    "158c047a-c907-4556-b7ef-446551a6b5f7": "Cloud Application Administrator",
+    "fe930be7-5e62-47db-91af-98c3a49a38b1": "User Administrator",
+}
+
+NON_ENFORCING_CA_STATES = {"disabled", "enabledForReportingButNotEnforced"}
+GITHUB_ACTIONS_ISSUER = "token.actions.githubusercontent.com"
+
+
+def entra_role_assignable_group(resource: Resource) -> Finding | None:
+    """ENT006 — a group created as role-assignable is a tier-0 object."""
+    if resource.type != "azuread_group":
+        return None
+    if "assignable_to_role" not in resource.after:
+        raise Unevaluable(resource.address, "ENT006", "assignable_to_role not in plan")
+    if resource.after.get("assignable_to_role") is not True:
+        return None
+    return Finding(
+        rule_id="ENT006", severity=Severity.HIGH, resource=resource.address,
+        title="Group is role-assignable (tier-0)",
+        detail=(
+            "assignable_to_role = true. This group can be granted a directory role, so anyone "
+            "who can change its membership can grant that role — a self-service path to whatever "
+            "the group is later assigned. It must be governed like a privileged role."
+        ),
+        remediation=(
+            "Only create role-assignable groups when you deliberately need one, restrict who "
+            "owns and manages it, and prefer PIM for Groups over standing membership. If this "
+            "group does not need to hold a role, set assignable_to_role = false."
+        ),
+    )
+
+
+def conditional_access_enforcing_policy_disabled(resource: Resource) -> Finding | None:
+    """ENT007 — a CA policy that enforces MFA / blocks legacy auth but is disabled or report-only."""
+    if resource.type != "azuread_conditional_access_policy":
+        return None
+    state = resource.after.get("state")
+    if state is None:
+        raise Unevaluable(resource.address, "ENT007", "state not in plan")
+    if state not in NON_ENFORCING_CA_STATES:
+        return None
+    grant = resource.after.get("grant_controls") or []
+
+    def _flatten(v):
+        out = []
+        for x in (v if isinstance(v, list) else [v]):
+            out.extend(_flatten(x) if isinstance(x, list) else [x])
+        return out
+
+    controls = " ".join(str(c).lower() for c in _flatten(grant))
+    if not any(k in controls for k in ("mfa", "block", "compliantdevice", "domainjoined")):
+        return None
+    label = "report-only" if state != "disabled" else "disabled"
+    return Finding(
+        rule_id="ENT007", severity=Severity.HIGH, resource=resource.address,
+        title=f"Enforcing Conditional Access policy is {label}",
+        detail=(
+            f'state = "{state}". This policy applies a real control (MFA / block / device '
+            "compliance) but is not enforcing, so it protects nothing while appearing "
+            "configured. A tenant relying on it for MFA or legacy-auth blocking is exposed."
+        ),
+        remediation=(
+            'If this is your enforcement policy, set state = "enabled". Keep report-only for '
+            "genuine staging, but never leave the control the tenant depends on in it."
+        ),
+    )
+
+
+def federated_identity_credential_broad_subject(resource: Resource) -> Finding | None:
+    """ENT008 — a workload-identity federation credential whose subject is too broad."""
+    if resource.type != "azuread_application_federated_identity_credential":
+        return None
+    subject = resource.after.get("subject")
+    issuer = str(resource.after.get("issuer") or "")
+    if subject is None:
+        raise Unevaluable(resource.address, "ENT008", "subject not in plan")
+    if "*" in subject:
+        why = "the subject contains a wildcard, so any matching external identity can assume this app"
+    elif GITHUB_ACTIONS_ISSUER in issuer and not any(
+        m in subject for m in (":ref:", ":environment:", ":pull_request")
+    ):
+        why = ("the GitHub Actions subject is not pinned to a branch (:ref:), an environment "
+               "(:environment:) or a pull_request, so any workflow in the repo can assume this app")
+    else:
+        return None
+    return Finding(
+        rule_id="ENT008", severity=Severity.HIGH, resource=resource.address,
+        title="Federated identity credential has an over-broad subject",
+        detail=(
+            f"issuer '{issuer}', subject '{subject}' — {why}. This grants a token as the app "
+            "with no client secret, so an over-broad subject is a keyless path to whatever the "
+            "app can do."
+        ),
+        remediation=(
+            "Pin the subject to the exact workload: for GitHub Actions, "
+            "'repo:ORG/REPO:ref:refs/heads/main' or ':environment:production'. Never use a "
+            "wildcard. One credential per trusted workload, scoped to that workload only."
+        ),
+    )
+
+
+def permanent_privileged_directory_role(resource: Resource) -> Finding | None:
+    """ENT009 — a privileged directory role assigned permanently (not PIM-eligible)."""
+    if resource.type != "azuread_directory_role_assignment":
+        return None
+    role_id = resource.after.get("role_id")
+    if role_id is None:
+        raise Unevaluable(resource.address, "ENT009", "role_id not in plan")
+    name = PRIVILEGED_DIRECTORY_ROLE_TEMPLATES.get(str(role_id))
+    if name is None:
+        if len(str(role_id)) == 36 and str(role_id).count("-") == 4:
+            return None
+        raise Unevaluable(resource.address, "ENT009",
+                          f"role_id '{role_id}' is not a recognisable role template")
+    return Finding(
+        rule_id="ENT009", severity=Severity.HIGH, resource=resource.address,
+        title=f"'{name}' assigned as a permanent directory role",
+        detail=(
+            f"Assigns {name} directly via azuread_directory_role_assignment — a standing, "
+            "always-on grant of a tier-0 role. An attacker who compromises the assignee has it "
+            "immediately, with no activation step and no time bound."
+        ),
+        remediation=(
+            "Make privileged roles PIM-eligible rather than permanently active, so they must be "
+            "activated (with MFA and a time limit) and every use is logged. Reserve any standing "
+            "Global Administrator for a monitored break-glass account."
+        ),
+    )
+
 ALL_RULES: list[Rule] = [
     entra_app_tier0_graph_permission,
     azure_role_assignment_privileged_broad_scope,
     conditional_access_mfa_scoped_by_risk,
     entra_app_password_no_expiry,
     azure_custom_role_wildcard_action,
+    entra_role_assignable_group,
+    conditional_access_enforcing_policy_disabled,
+    federated_identity_credential_broad_subject,
+    permanent_privileged_directory_role,
 ]

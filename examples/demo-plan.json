@@ -86,6 +86,36 @@
           "scope": "/subscriptions/x/resourceGroups/rg-app/providers/Microsoft.Web/sites/app"
         }
       }
+    },
+    {
+      "address": "azuread_application_federated_identity_credential.deploy",
+      "type": "azuread_application_federated_identity_credential",
+      "change": {
+        "actions": [
+          "create"
+        ],
+        "after": {
+          "display_name": "deploy",
+          "issuer": "https://token.actions.githubusercontent.com",
+          "subject": "repo:acme/infra",
+          "audiences": [
+            "api://AzureADTokenExchange"
+          ]
+        }
+      }
+    },
+    {
+      "address": "azuread_directory_role_assignment.ga",
+      "type": "azuread_directory_role_assignment",
+      "change": {
+        "actions": [
+          "create"
+        ],
+        "after": {
+          "role_id": "62e90394-69f5-4237-9190-012177145e10",
+          "principal_object_id": "x"
+        }
+      }
     }
   ]
 }

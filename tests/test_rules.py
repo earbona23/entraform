@@ -65,3 +65,43 @@ def test_ent002_scoped_assignment_is_clean():
 def test_ent003_secret_with_expiry_is_clean():
     r = Resource("a", "azuread_application_password", {"end_date_relative": "4320h"})
     assert rules.entra_app_password_no_expiry(r) is None
+
+
+def test_new_rules_fire_on_their_targets(plan_json):
+    found, _ = _findings_by_rule(plan_json)
+    for rule_id in ("ENT006", "ENT007", "ENT008", "ENT009"):
+        assert rule_id in found, f"{rule_id} did not fire on its target"
+
+
+def test_ent006_normal_group_is_clean():
+    r = Resource("g", "azuread_group", {"display_name": "team", "assignable_to_role": False})
+    assert rules.entra_role_assignable_group(r) is None
+
+
+def test_ent007_enabled_enforcing_policy_is_clean():
+    r = Resource("p", "azuread_conditional_access_policy", {
+        "state": "enabled", "grant_controls": [{"built_in_controls": ["mfa"]}],
+        "conditions": [{"users": [{"included_users": ["All"]}]}]})
+    assert rules.conditional_access_enforcing_policy_disabled(r) is None
+
+
+def test_ent008_pinned_github_subject_is_clean():
+    # A subject pinned to a specific branch is the correct, safe shape.
+    r = Resource("f", "azuread_application_federated_identity_credential", {
+        "issuer": "https://token.actions.githubusercontent.com",
+        "subject": "repo:acme/infra:ref:refs/heads/main"})
+    assert rules.federated_identity_credential_broad_subject(r) is None
+
+
+def test_ent008_wildcard_subject_fires_regardless_of_issuer():
+    r = Resource("f", "azuread_application_federated_identity_credential", {
+        "issuer": "https://example.com", "subject": "system:serviceaccount:*"})
+    assert rules.federated_identity_credential_broad_subject(r) is not None
+
+
+def test_ent009_non_privileged_role_is_clean():
+    # A resolvable GUID that is simply not in the privileged set must pass, not raise.
+    r = Resource("a", "azuread_directory_role_assignment", {
+        "role_id": "88d8e3e3-8f55-4a1e-953a-9b9898b8876b",
+        "principal_object_id": "x"})
+    assert rules.permanent_privileged_directory_role(r) is None

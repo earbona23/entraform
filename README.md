@@ -51,6 +51,10 @@ apply, not in an audit six months later.
 | **ENT004** | high | An MFA Conditional Access policy **scoped to risk levels only**, so it doesn't cover ordinary sign-ins — the same fail-open shape CISA's ScubaGear flags for MS.AAD.3.x. |
 | **ENT003** | medium | An `azuread_application_password` (client secret) with **no expiry** set. |
 | **ENT005** | high | A custom `azurerm_role_definition` granting the wildcard action `"*"` — Owner in disguise. |
+| **ENT006** | high | A group created **role-assignable** (`assignable_to_role = true`) — a tier-0 object anyone who manages its membership can weaponise. |
+| **ENT007** | high | A Conditional Access policy that enforces MFA / blocks legacy auth but is **disabled or report-only** — protection that protects nothing. |
+| **ENT008** | high | A **workload-identity federation** credential with an over-broad subject (a wildcard, or an unpinned GitHub Actions subject) — a keyless path into the tenant. |
+| **ENT009** | high | A **privileged directory role** (Global Administrator, Privileged Role Administrator, …) assigned **permanently** rather than PIM-eligible. |
 
 Each finding names the resource, explains the attack path in a sentence, and gives the
 specific fix. Rules are grounded in real escalation paths, not style preferences.
@@ -132,7 +136,7 @@ This is **v0.1 (alpha)**, and it is deliberately honest about its edges:
   anything configured outside Terraform, is invisible to it — for the live tenant, use
   something like [Maester](https://github.com/maester365/maester) or
   [ScubaGear](https://github.com/cisagov/ScubaGear).
-- **Five rules today.** It covers a small set of high-value identity misconfigurations, not
+- **Nine rules today.** It covers a small set of high-value identity misconfigurations, not
   the whole Azure/Entra surface. It is not a replacement for `checkov`/`tfsec` on the broad
   cloud-security checks — run it *alongside* them.
 - **Values must be known at plan time.** A permission id or scope that is a computed value
