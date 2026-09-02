@@ -165,6 +165,24 @@ the build fails.
 Every rule's tests are load-bearing: each was checked by breaking the rule and confirming a
 specific test dies. A rule that fires on everything, or on nothing, does not pass this suite.
 
+## Sponsor
+
+entraform is MIT and free forever. If it catches a bad identity change before it
+ships, or earns a place in your pipeline, sponsoring keeps it maintained: bug fixes,
+keeping the Graph-permission and Conditional Access rules current as Entra changes,
+and testing against new provider shapes.
+
+- **[Sponsor on GitHub](https://github.com/sponsors/earbona23)** — any amount.
+
+## More tools like this
+
+Part of a small suite of dependency-free security tools I maintain. Each one runs
+offline, ships its own tests, and maps its detections to MITRE ATT&CK.
+
+- **[revtriage](https://github.com/earbona23/revtriage)** — offline malware triage: an explainable score and a STIX bundle from a suspicious file.
+- **[entra-tripwire](https://github.com/earbona23/entra-tripwire)** — decoy identities in Entra ID that fire the moment someone touches them.
+- **[containment-cut](https://github.com/earbona23/containment-cut)** — the minimum-cost set of actions that provably severs a compromised identity, with a proof.
+
 ## Licence
 
 [MIT](LICENSE). Runs read-only against a plan file. Point it only at infrastructure you are
