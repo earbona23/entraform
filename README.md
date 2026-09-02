@@ -179,6 +179,7 @@ and testing against new provider shapes.
 Part of a small suite of dependency-free security tools I maintain. Each one runs
 offline, ships its own tests, and maps its detections to MITRE ATT&CK.
 
+- **[vantage](https://github.com/earbona23/vantage)** — see your domain's external attack surface the way an attacker's first recon does, scored and explained.
 - **[revtriage](https://github.com/earbona23/revtriage)** — offline malware triage: an explainable score and a STIX bundle from a suspicious file.
 - **[entra-tripwire](https://github.com/earbona23/entra-tripwire)** — decoy identities in Entra ID that fire the moment someone touches them.
 - **[containment-cut](https://github.com/earbona23/containment-cut)** — the minimum-cost set of actions that provably severs a compromised identity, with a proof.
