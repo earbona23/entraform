@@ -1,0 +1,34 @@
+name: ci
+on:
+  push:
+    branches: [main]
+  pull_request:
+  workflow_dispatch:
+permissions:
+  contents: read
+jobs:
+  test:
+    runs-on: ${{ matrix.os }}
+    strategy:
+      fail-fast: false
+      matrix:
+        os: [ubuntu-latest, windows-latest, macos-latest]
+        python-version: ["3.11", "3.12", "3.13"]
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: ${{ matrix.python-version }}
+      - run: python -m pip install -e ".[dev]"
+      - run: python -m pytest
+      # Dogfood: the tool must flag the demo plan and exit non-zero, and its JSON must name
+      # the three findings. A tool whose own example does not trip it is decoration.
+      - name: Dogfood the demo plan
+        shell: bash
+        run: |
+          set +e
+          python -m entraform examples/demo-plan.json --no-color
+          code=$?
+          set -e
+          test "$code" = "1" || { echo "demo plan should exit 1, got $code"; exit 1; }
+          python -m entraform examples/demo-plan.json -f json | python -c "import json,sys; d=json.load(sys.stdin); ids={f['rule_id'] for f in d['findings']}; assert {'ENT001','ENT002','ENT004'} <= ids, ids; print('dogfood ok:', sorted(ids))"

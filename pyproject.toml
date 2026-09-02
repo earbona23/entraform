@@ -1,0 +1,49 @@
+[build-system]
+requires = ["setuptools>=68"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "entraform"
+version = "0.1.0"
+description = "Identity-aware security linter for Terraform: catches over-privileged Entra app permissions, dangerous Azure role assignments and Conditional Access gaps in your plan, in CI, before apply. Zero dependencies."
+readme = "README.md"
+requires-python = ">=3.11"
+license = "MIT"
+authors = [{ name = "Eduard Arbona" }]
+keywords = [
+  "terraform", "entra-id", "azure-ad", "azure", "iam", "least-privilege",
+  "conditional-access", "policy-as-code", "iac-security", "devsecops",
+  "identity-security", "static-analysis", "ci",
+]
+classifiers = [
+  "Development Status :: 3 - Alpha",
+  "Environment :: Console",
+  "Intended Audience :: Information Technology",
+  "Operating System :: OS Independent",
+  "Programming Language :: Python :: 3.11",
+  "Programming Language :: Python :: 3.12",
+  "Programming Language :: Python :: 3.13",
+  "Topic :: Security",
+]
+# Zero runtime dependencies. This runs in other people's CI against their
+# infrastructure plans; it must not drag a dependency tree into that trust boundary,
+# and everything it needs is a JSON parser the standard library already ships.
+dependencies = []
+
+[project.optional-dependencies]
+dev = ["pytest>=8"]
+
+[project.scripts]
+entraform = "entraform.cli:main"
+
+[project.urls]
+Homepage = "https://github.com/earbona23/entraform"
+Issues = "https://github.com/earbona23/entraform/issues"
+
+[tool.setuptools.packages.find]
+where = ["src"]
+
+[tool.pytest.ini_options]
+testpaths = ["tests"]
+pythonpath = ["src"]
+addopts = "-q"

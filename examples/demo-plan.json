@@ -1,0 +1,91 @@
+{
+  "format_version": "1.2",
+  "resource_changes": [
+    {
+      "address": "azuread_application.reporting",
+      "type": "azuread_application",
+      "provider_name": "registry.terraform.io/hashicorp/azuread",
+      "change": {
+        "actions": [
+          "create"
+        ],
+        "after": {
+          "display_name": "Legacy Reporting",
+          "required_resource_access": [
+            {
+              "resource_app_id": "00000003-0000-0000-c000-000000000000",
+              "resource_access": [
+                {
+                  "id": "1bfefb4e-e0b5-418b-a88f-73c46d2cc8e9",
+                  "type": "Role"
+                }
+              ]
+            }
+          ]
+        }
+      }
+    },
+    {
+      "address": "azurerm_role_assignment.ci",
+      "type": "azurerm_role_assignment",
+      "provider_name": "registry.terraform.io/hashicorp/azuread",
+      "change": {
+        "actions": [
+          "create"
+        ],
+        "after": {
+          "role_definition_name": "Owner",
+          "scope": "/subscriptions/00000000-0000-0000-0000-000000000000"
+        }
+      }
+    },
+    {
+      "address": "azuread_conditional_access_policy.mfa",
+      "type": "azuread_conditional_access_policy",
+      "provider_name": "registry.terraform.io/hashicorp/azuread",
+      "change": {
+        "actions": [
+          "create"
+        ],
+        "after": {
+          "display_name": "Require MFA",
+          "grant_controls": [
+            {
+              "built_in_controls": [
+                "mfa"
+              ]
+            }
+          ],
+          "conditions": [
+            {
+              "sign_in_risk_levels": [
+                "high"
+              ],
+              "users": [
+                {
+                  "included_users": [
+                    "All"
+                  ]
+                }
+              ]
+            }
+          ]
+        }
+      }
+    },
+    {
+      "address": "azurerm_role_assignment.app",
+      "type": "azurerm_role_assignment",
+      "provider_name": "registry.terraform.io/hashicorp/azuread",
+      "change": {
+        "actions": [
+          "create"
+        ],
+        "after": {
+          "role_definition_name": "Reader",
+          "scope": "/subscriptions/x/resourceGroups/rg-app/providers/Microsoft.Web/sites/app"
+        }
+      }
+    }
+  ]
+}
