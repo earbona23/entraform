@@ -32,7 +32,9 @@ def test_sarif_is_valid_2_1_0(plan_json):
     assert {r["ruleId"] for r in results} <= rule_ids
 
     # A critical finding maps to error + a high security-severity for the Security tab.
-    crit = next(r for r in results if r["ruleId"] == "ENT001")
+    crit_results = [r for r in results if r["ruleId"] == "ENT001"]
+    assert crit_results, "expected an ENT001 result in the SARIF output"
+    crit = crit_results[0]
     assert crit["level"] == "error"
     desc = next(x for x in run["tool"]["driver"]["rules"] if x["id"] == "ENT001")
     assert float(desc["properties"]["security-severity"]) >= 9.0
