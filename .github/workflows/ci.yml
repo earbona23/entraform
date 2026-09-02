@@ -29,6 +29,9 @@ jobs:
           set +e
           python -m entraform examples/demo-plan.json --no-color
           code=$?
-          set -e
           test "$code" = "1" || { echo "demo plan should exit 1, got $code"; exit 1; }
-          python -m entraform examples/demo-plan.json -f json | python -c "import json,sys; d=json.load(sys.stdin); ids={f['rule_id'] for f in d['findings']}; assert {'ENT001','ENT002','ENT004'} <= ids, ids; print('dogfood ok:', sorted(ids))"
+          # entraform exits 1 on findings; capture to a file rather than pipe, so bash's
+          # pipefail does not read that intended non-zero exit as a step failure.
+          python -m entraform examples/demo-plan.json -f json > findings.json || true
+          set -e
+          python -c "import json; d=json.load(open('findings.json')); ids={f['rule_id'] for f in d['findings']}; assert {'ENT001','ENT002','ENT004'} <= ids, ids; print('dogfood ok:', sorted(ids))"
