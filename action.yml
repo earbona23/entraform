@@ -1,0 +1,38 @@
+name: "entraform"
+description: "Lint a Terraform plan for Entra ID / Azure identity misconfigurations and upload results to GitHub code scanning."
+branding:
+  icon: "shield"
+  color: "purple"
+inputs:
+  plan:
+    description: "Path to a `terraform show -json` plan file."
+    required: true
+  fail-on:
+    description: "Minimum severity that fails the build (critical|high|medium|low)."
+    required: false
+    default: "high"
+  upload-sarif:
+    description: "Write a SARIF file for github/codeql-action/upload-sarif."
+    required: false
+    default: "true"
+  sarif-file:
+    description: "Where to write the SARIF file."
+    required: false
+    default: "entraform.sarif"
+runs:
+  using: "composite"
+  steps:
+    - name: Set up Python
+      uses: actions/setup-python@v5
+      with:
+        python-version: "3.13"
+    - name: Install entraform
+      shell: bash
+      run: python -m pip install --quiet "entraform @ git+https://github.com/earbona23/entraform@${{ github.action_ref || 'main' }}"
+    - name: Run entraform
+      shell: bash
+      run: |
+        if [ "${{ inputs.upload-sarif }}" = "true" ]; then
+          entraform "${{ inputs.plan }}" -f sarif > "${{ inputs.sarif-file }}" || true
+        fi
+        entraform "${{ inputs.plan }}" --no-color --fail-on "${{ inputs.fail-on }}"

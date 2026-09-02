@@ -69,6 +69,29 @@ unevaluable resource is reported as *review-needed*, never folded silently into 
 A linter that cannot tell "clean" from "could not look" lies on the day it matters. This one
 is built so it can't.
 
+## Drop it into GitHub Actions (2 minutes)
+
+```yaml
+# .github/workflows/entraform.yml
+permissions:
+  contents: read
+  security-events: write
+
+# ...after terraform plan -out plan.tfplan && terraform show -json plan.tfplan > plan.json
+- uses: earbona23/entraform@v1
+  with:
+    plan: plan.json
+    fail-on: high
+- uses: github/codeql-action/upload-sarif@v3
+  if: always()
+  with:
+    sarif_file: entraform.sarif
+```
+
+Because it emits **SARIF**, findings land as annotations on the pull request and in your
+repository's **Security tab** — on the exact resource, before apply — not buried in a log.
+Full workflow: [docs/github-action.md](docs/github-action.md).
+
 ## Install and use in CI
 
 ```console
@@ -90,7 +113,7 @@ Exit codes, because it lives in a pipeline:
 | `1` | findings that meet `--fail-on` (default: `high`) |
 | `2` | could not read the plan |
 
-Flags: `--fail-on {critical,high,medium,low}`, `--format {text,json}`, `--strict` (also fail
+Flags: `--fail-on {critical,high,medium,low}`, `--format {text,json,sarif}`, `--strict` (also fail
 on unevaluable resources), `--no-color`.
 
 ## Zero dependencies is the point

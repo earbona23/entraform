@@ -72,7 +72,7 @@ def main(argv: list[str] | None = None) -> int:
         description="Identity-aware security linter for Terraform plans (Entra ID / Azure).",
     )
     parser.add_argument("plan", help="path to `terraform show -json <plan>` output, or - for stdin")
-    parser.add_argument("-f", "--format", choices=["text", "json"], default="text")
+    parser.add_argument("-f", "--format", choices=["text", "json", "sarif"], default="text")
     parser.add_argument("--fail-on", choices=list(_THRESHOLDS), default="high",
                         help="minimum severity that sets a non-zero exit (default: high)")
     parser.add_argument("--strict", action="store_true",
@@ -94,7 +94,13 @@ def main(argv: list[str] | None = None) -> int:
 
     report = scan(resources)
     color = sys.stdout.isatty() and not args.no_color
-    print(render_json(report) if args.format == "json" else render_text(report, color))
+    if args.format == "sarif":
+        from .sarif import to_sarif
+        print(to_sarif(report, plan_path=(args.plan if args.plan != "-" else "plan.json")))
+    elif args.format == "json":
+        print(render_json(report))
+    else:
+        print(render_text(report, color))
 
     threshold = _THRESHOLDS[args.fail_on]
     failing = [f for f in report.findings if f.severity.rank >= threshold.rank]

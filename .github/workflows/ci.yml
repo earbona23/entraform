@@ -35,3 +35,26 @@ jobs:
           python -m entraform examples/demo-plan.json -f json > findings.json || true
           set -e
           python -c "import json; d=json.load(open('findings.json')); ids={f['rule_id'] for f in d['findings']}; assert {'ENT001','ENT002','ENT004'} <= ids, ids; print('dogfood ok:', sorted(ids))"
+
+  sarif-selfcheck:
+    # entraform's own SARIF must be ingestible by GitHub code scanning. We dogfood our own
+    # Security tab: if the uploader rejects our SARIF, this job fails.
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+      security-events: write
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.13"
+      - run: python -m pip install -e .
+      - run: python -m entraform examples/demo-plan.json -f sarif > entraform.sarif || true
+      - name: Validate SARIF is well-formed
+        run: |
+          python -c "import json; d=json.load(open('entraform.sarif')); assert d['version']=='2.1.0'; assert d['runs'][0]['results']; print('SARIF ok:', len(d['runs'][0]['results']), 'results')"
+      - name: Upload to code scanning (proves it ingests)
+        uses: github/codeql-action/upload-sarif@v3
+        with:
+          sarif_file: entraform.sarif
+          category: entraform-selfcheck
