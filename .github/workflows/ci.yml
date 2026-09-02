@@ -54,7 +54,7 @@ jobs:
         run: |
           python -c "import json; d=json.load(open('entraform.sarif')); assert d['version']=='2.1.0'; assert d['runs'][0]['results']; print('SARIF ok:', len(d['runs'][0]['results']), 'results')"
       - name: Upload to code scanning (proves it ingests)
-        uses: github/codeql-action/upload-sarif@v3
+        uses: github/codeql-action/upload-sarif@v4
         with:
           sarif_file: entraform.sarif
           category: entraform-selfcheck
