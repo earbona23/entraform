@@ -4,6 +4,7 @@
 [![Python 3.11+](https://img.shields.io/badge/Python-3.11%2B-3776AB)](https://www.python.org/downloads/)
 [![Licence: MIT](https://img.shields.io/badge/Licence-MIT-blue.svg)](LICENSE)
 [![Runtime dependencies: 0](https://img.shields.io/badge/runtime%20deps-0-2f855a)](#zero-dependencies-is-the-point)
+[![Linux · macOS · Windows](https://img.shields.io/badge/Linux%20%C2%B7%20macOS%20%C2%B7%20Windows-CI--tested-4c1)](https://github.com/earbona23/entraform/actions/workflows/ci.yml)
 
 **An identity-aware security linter for Terraform.** It reads your `terraform plan`, finds
 the identity misconfigurations that generic IaC scanners walk past — over-privileged Entra

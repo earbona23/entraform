@@ -1,0 +1,10 @@
+# Zero Python runtime dependencies by design, so the only moving supply chain is the
+# GitHub Actions this repo's CI uses. Keep them current and pinned.
+version: 2
+updates:
+  - package-ecosystem: "github-actions"
+    directory: "/"
+    schedule:
+      interval: "weekly"
+    commit-message:
+      prefix: "ci"
