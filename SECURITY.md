@@ -6,6 +6,8 @@ Open a [private security advisory](https://github.com/earbona23/entraform/securi
 Please do not open a public issue for a vulnerability. Acknowledgement within 72 hours,
 assessment within seven days, and credit in the advisory unless you ask otherwise.
 
+If you cannot use the advisory form, email **earbona@arrankago.com** instead.
+
 ## The threat model, because it is unusual
 
 entraform runs inside **your** CI, against **your** infrastructure plan. The plan file it

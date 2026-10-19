@@ -9,7 +9,7 @@ description = "Identity-aware security linter for Terraform: catches over-privil
 readme = "README.md"
 requires-python = ">=3.11"
 license = "MIT"
-authors = [{ name = "Eduard Arbona" }]
+authors = [{ name = "Eduard Arbona", email = "earbona@arrankago.com" }]
 keywords = [
   "terraform", "entra-id", "azure-ad", "azure", "iam", "least-privilege",
   "conditional-access", "policy-as-code", "iac-security", "devsecops",
